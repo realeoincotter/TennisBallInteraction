@@ -1,0 +1,20 @@
+# Unity generated folders
+Tennis/[Ll]ibrary/
+Tennis/[Tt]emp/
+Tennis/[Oo]bj/
+Tennis/[Bb]uild/
+Tennis/[Bb]uilds/
+Tennis/[Ll]ogs/
+Tennis/[Uu]ser[Ss]ettings/
+
+# Visual Studio / Rider files
+Tennis/.vs/
+Tennis/.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+
+# Blender backup files
+*.blend1
+*.blend2

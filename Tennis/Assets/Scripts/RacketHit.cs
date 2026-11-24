@@ -2,31 +2,58 @@ using UnityEngine;
 
 public class RacketHit : MonoBehaviour
 {
-    public float hitPower = 1.5f;   // how much of the swing speed transfers to the ball
-    public float minBallSpeed = 3f; // stops weak, dead bounces
+    public Transform hitPoint;        // empty object at the centre of the strings
+    public float hitPower = 1.2f;     // how much swing speed carries into the ball
+    public float minHitSpeed = 4f;    // even a gentle tap sends it this fast
+    public float maxHitSpeed = 25f;   // stops crazy shots
+    public float upwardLift = 0.15f;  // small upward angle to clear the net
+    public float hitCooldown = 0.2f;  // stops one swing hitting twice
 
     Vector3 lastPos;
     Vector3 racketVelocity;
+    float lastHitTime = -1f;
 
-    void FixedUpdate()
+    void Start() => lastPos = hitPoint.position;
+
+    void Update()
     {
-        racketVelocity = (transform.position - lastPos) / Time.fixedDeltaTime;
-        lastPos = transform.position;
+        // Measure how fast the racket head is moving (smoothed to reduce jitter)
+        if (Time.deltaTime > 0)
+        {
+            Vector3 raw = (hitPoint.position - lastPos) / Time.deltaTime;
+            racketVelocity = Vector3.Lerp(racketVelocity, raw, 0.5f);
+        }
+        lastPos = hitPoint.position;
     }
 
-    void OnCollisionEnter(Collision collision)
+    void OnTriggerEnter(Collider other)
     {
-        if (!collision.gameObject.CompareTag("Ball")) return;
+        if (!other.CompareTag("Ball")) return;
+        if (Time.time - lastHitTime < hitCooldown) return;
+        lastHitTime = Time.time;
 
-        Rigidbody ball = collision.rigidbody;
-        Vector3 normal = collision.contacts[0].normal * -1f; // points out of the racket face
+        Rigidbody ball = other.attachedRigidbody;
+        if (!ball) return;
 
-        Vector3 bounced = Vector3.Reflect(ball.linearVelocity, normal);
-        Vector3 newVel = bounced + racketVelocity * hitPower;
+        // Pick which side of the strings the ball is going out of
+        Vector3 faceNormal = hitPoint.forward;
+        if (racketVelocity.magnitude > 0.5f)
+        {
+            if (Vector3.Dot(faceNormal, racketVelocity) < 0) faceNormal = -faceNormal;
+        }
+        else if (Vector3.Dot(faceNormal, ball.linearVelocity) > 0)
+        {
+            faceNormal = -faceNormal; // racket still: bounce the ball back the way it came
+        }
 
-        if (newVel.magnitude < minBallSpeed)
-            newVel = newVel.normalized * minBallSpeed;
+        // Ball goes mostly where the strings point, a bit towards the swing direction
+        Vector3 dir = Vector3.Lerp(faceNormal, racketVelocity.normalized, 0.3f);
+        dir += Vector3.up * upwardLift;
+        dir.Normalize();
 
-        ball.linearVelocity = newVel;
+        float speed = Mathf.Clamp(racketVelocity.magnitude * hitPower, minHitSpeed, maxHitSpeed);
+
+        ball.linearVelocity = dir * speed;
+        ball.angularVelocity = Vector3.zero;
     }
 }

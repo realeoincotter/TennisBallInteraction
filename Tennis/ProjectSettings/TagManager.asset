@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 3
   tags:
   - Ball
+  - Racket
+  - ground
   layers:
   - Default
   - TransparentFX
